@@ -326,11 +326,11 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
         <thead>
           <tr>
             <th data-sort="data">Data ⇅</th>
-            <th data-sort="saida">Saída ⇅</th>
             <th data-sort="descricao">Descrição ⇅</th>
-            <th data-sort="categoria">Categoria ⇅</th>
-            <th data-sort="cartao">Cartão ⇅</th>
+            <th data-sort="saida">Valor ⇅</th>
+            <th data-sort="parcela">Nº Parcela ⇅</th>
             <th data-sort="identificador">Identificador ⇅</th>
+            <th data-sort="categoria">Categoria ⇅</th>
             <th></th>
           </tr>
         </thead>
@@ -365,6 +365,7 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
     </p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
       <select id="pasteColOrder" style="flex:1;min-width:220px;border:none;background:rgba(127,127,170,0.12);padding:9px 12px;border-radius:10px;color:var(--text);font-family:inherit;">
+        <option value="data,descricao,saida,parcela,identificador,categoria">Data, Descrição, Valor, Nº Parcela, Identificador, Categoria</option>
         <option value="data,saida,descricao,categoria,cartao">Data, Saída, Descrição, Categoria, Cartão</option>
         <option value="data,saida,descricao,categoria,cartao,identificador">Data, Saída, Descrição, Categoria, Cartão, Identificador</option>
         <option value="data,saida,descricao,categoria">Data, Saída, Descrição, Categoria</option>
@@ -757,7 +758,8 @@ function addTransaction(){
     descricao: '',
     categoria: state.categories[0]||'',
     cartao: state.cards[0]||'',
-    identificador: ''
+    identificador: '',
+    parcela: ''
   });
   saveState();
   renderTransactions();
@@ -945,7 +947,7 @@ function parsePastedRows(text){
   lines.forEach(line=>{
     const cells = line.split('\t');
     if(cells.length===1 && cells[0].includes(';')) cells.splice(0,1,...cells[0].split(';'));
-    const entry = {data:'', saida:0, descricao:'', categoria:'', cartao:'', identificador:''};
+    const entry = {data:'', saida:0, descricao:'', categoria:'', cartao:'', identificador:'', parcela:''};
     order.forEach((field, idx)=>{
       const val = cells[idx]!==undefined ? cells[idx].trim() : '';
       if(field==='saida') entry.saida = parseBRNumber(val);
@@ -981,7 +983,8 @@ function importPastedData(){
       descricao: r.descricao || '',
       categoria: categoria,
       cartao: cartao,
-      identificador: identificador
+      identificador: identificador,
+      parcela: r.parcela || ''
     });
   });
   saveState();
@@ -1058,11 +1061,11 @@ function renderTransactions(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input class="editable" type="text" value="${t.data}" onchange="updateTransaction('${t.id}','data',this.value)"></td>
-      <td><input class="editable" type="text" value="${t.saida}" onchange="updateTransaction('${t.id}','saida',this.value)"></td>
       <td><input class="editable" type="text" value="${(t.descricao||'').replace(/"/g,'&quot;')}" onchange="updateTransaction('${t.id}','descricao',this.value)"></td>
-      <td>${selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`)}</td>
-      <td>${selectHTML(state.cards, t.cartao, `updateTransaction('${t.id}','cartao',this.value)`, true)}</td>
+      <td><input class="editable" type="text" value="${t.saida}" onchange="updateTransaction('${t.id}','saida',this.value)"></td>
+      <td><input class="editable" type="text" value="${(t.parcela||'').replace(/"/g,'&quot;')}" placeholder="ex: 2/12" onchange="updateTransaction('${t.id}','parcela',this.value)"></td>
       <td>${identSelectHTML(t.identificador, `updateTransaction('${t.id}','identificador',this.value)`)}</td>
+      <td>${selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`)}</td>
       <td class="row-actions"><button onclick="removeTransaction('${t.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
