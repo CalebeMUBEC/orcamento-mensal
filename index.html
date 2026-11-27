@@ -1019,6 +1019,7 @@ function updateTransaction(id, field, value){
 document.getElementById('txSearch').addEventListener('input', renderTransactions);
 document.getElementById('txFilterCategoria').addEventListener('change', renderTransactions);
 document.getElementById('txFilterCartao').addEventListener('change', renderTransactions);
+document.getElementById('txFilterPessoa').addEventListener('change', renderTransactions);
 document.querySelectorAll('#txTable thead th[data-sort]').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.dataset.sort;
