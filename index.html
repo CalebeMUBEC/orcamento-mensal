@@ -842,6 +842,7 @@ function adjustDivida(sign){
 
 function renderPessoas(){
   if(!state.people) state.people = [];
+  state.people = state.people.filter(p=>p.identificador!=='C');
   const grid = document.getElementById('pessoasGrid');
   let totalGeral = 0;
   grid.innerHTML = state.people.map(p=>{
@@ -975,7 +976,7 @@ function importPastedData(){
     }
     if(cartao && !state.cards.includes(cartao)) state.cards.push(cartao);
     const identificador = (r.identificador||'').toUpperCase();
-    if(identificador && !state.people.some(p=>p.identificador===identificador)){
+    if(identificador && identificador!=='C' && !state.people.some(p=>p.identificador===identificador)){
       state.people.push({ id: uid(), identificador, nome: identificador, divida: 0 });
     }
     state.transactions.push({
@@ -1079,13 +1080,15 @@ function renderTransactions(){
 }
 
 function selectHTML(options, selected, onchange, asTag){
-  const opts = options.map(o=>`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('');
+  const list = (selected && !options.includes(selected)) ? options.concat([selected]) : options;
+  const opts = list.map(o=>`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('');
   return `<select class="editable" onchange="${onchange}">${opts}</select>`;
 }
 
 function identSelectHTML(selected, onchange){
-  const opts = ['<option value="">—</option>'].concat(
-    (state.people||[]).map(p=>`<option value="${p.identificador}" ${p.identificador===selected?'selected':''}>${p.identificador} - ${p.nome}</option>`)
+  const pessoas = (state.people||[]).filter(p=>p.identificador!=='C');
+  const opts = ['<option value="">—</option>', `<option value="C" ${selected==='C'?'selected':''}>C - Calebe (você)</option>`].concat(
+    pessoas.map(p=>`<option value="${p.identificador}" ${p.identificador===selected?'selected':''}>${p.identificador} - ${p.nome}</option>`)
   );
   return `<select class="editable" onchange="${onchange}">${opts.join('')}</select>`;
 }
