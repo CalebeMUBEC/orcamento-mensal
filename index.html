@@ -1006,7 +1006,10 @@ function updateTransaction(id, field, value){
   const t = state.transactions.find(t=>t.id===id);
   if(!t) return;
   if(field==='saida') t[field] = parseFloat(value.replace(',','.'))||0;
-  else if(field==='identificador') t[field] = value.trim().toUpperCase();
+  else if(field==='identificador'){
+    t[field] = value.trim().toUpperCase();
+    if(t.identificador && t.identificador!=='C') t.categoria = '';
+  }
   else t[field] = value;
   saveState();
   renderTransactions();
@@ -1068,7 +1071,7 @@ function renderTransactions(){
       <td><input class="editable" type="text" value="${t.saida}" onchange="updateTransaction('${t.id}','saida',this.value)"></td>
       <td><input class="editable" type="text" value="${(t.parcela||'').replace(/"/g,'&quot;')}" placeholder="ex: 2/12" onchange="updateTransaction('${t.id}','parcela',this.value)"></td>
       <td>${identSelectHTML(t.identificador, `updateTransaction('${t.id}','identificador',this.value)`)}</td>
-      <td>${selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`)}</td>
+      <td>${(!t.identificador||t.identificador==='C') ? selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`) : '<span style="opacity:.5;">—</span>'}</td>
       <td class="row-actions"><button onclick="removeTransaction('${t.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
