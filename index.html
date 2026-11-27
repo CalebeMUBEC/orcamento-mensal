@@ -385,6 +385,12 @@ select option{ background:var(--bg1); color:var(--text); }
         <input type="checkbox" id="pasteHasHeader"> primeira linha é cabeçalho
       </label>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <label style="font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">Vincular todas ao cartão:</label>
+      <select id="pasteCartaoTodos" style="flex:1;border:none;background:rgba(127,127,170,0.12);padding:9px 12px;border-radius:10px;color:var(--text);font-family:inherit;">
+        <option value="">— não forçar (usar coluna Cartão, se houver) —</option>
+      </select>
+    </div>
     <textarea id="pasteArea" rows="8" placeholder="Cole aqui (Ctrl+V) as linhas copiadas do Excel..." style="width:100%;resize:vertical;border:none;background:rgba(127,127,170,0.12);padding:10px 12px;border-radius:10px;color:var(--text);font-family:inherit;font-size:0.85rem;"></textarea>
     <div id="pastePreview" style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;min-height:18px;"></div>
     <button class="btn-primary" style="width:100%;margin-top:10px;" onclick="importPastedData()">Importar Transações</button>
@@ -890,6 +896,8 @@ function renderPessoas(){
 function openPasteModal(prefill){
   const area = document.getElementById('pasteArea');
   area.value = prefill || '';
+  const selCartao = document.getElementById('pasteCartaoTodos');
+  selCartao.innerHTML = '<option value="">— não forçar (usar coluna Cartão, se houver) —</option>' + state.cards.map(c=>`<option value="${c}">${c}</option>`).join('');
   document.getElementById('pasteModal').classList.add('active');
   document.getElementById('pastePreview').textContent = prefill ? parsePastedRows(prefill).length+' linha(s) detectada(s).' : '';
   setTimeout(()=>area.focus(), 50);
@@ -976,9 +984,10 @@ function importPastedData(){
   const text = document.getElementById('pasteArea').value;
   const rows = parsePastedRows(text);
   if(!rows.length){ alert('Nenhuma linha válida encontrada para importar.'); return; }
+  const cartaoForcado = document.getElementById('pasteCartaoTodos').value;
   rows.forEach(r=>{
     const categoria = r.categoria || state.categories[0] || '';
-    const cartao = r.cartao || state.cards[0] || '';
+    const cartao = cartaoForcado || r.cartao || state.cards[0] || '';
     if(categoria && !state.categories.includes(categoria)){
       state.categories.push(categoria);
       getMonth(currentMonth).variaveisOrcamento[categoria] = 0;
