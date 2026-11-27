@@ -746,7 +746,7 @@ function refreshFilterOptions(){
   const curCat = selCat.value, curCard = selCard.value, curPessoa = selPessoa.value;
   selCat.innerHTML = '<option value="">Todas categorias</option>' + state.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
   selCard.innerHTML = '<option value="">Todos cartões</option>' + state.cards.map(c=>`<option value="${c}">${c}</option>`).join('');
-  selPessoa.innerHTML = '<option value="">Todas pessoas</option>' + (state.people||[]).map(p=>`<option value="${p.identificador}">${p.identificador} - ${p.nome}</option>`).join('');
+  selPessoa.innerHTML = '<option value="">Todas pessoas</option><option value="C">C - Calebe (você)</option>' + (state.people||[]).filter(p=>p.identificador!=='C').map(p=>`<option value="${p.identificador}">${p.identificador} - ${p.nome}</option>`).join('');
   selCat.value = curCat; selCard.value = curCard; selPessoa.value = curPessoa;
 }
 
