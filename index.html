@@ -769,6 +769,7 @@ function addTransaction(){
 let dividaModalPersonId = null;
 
 function cartaoTotalForPessoa(identificador){
+  if(identificador==='C') return 0;
   return state.transactions
     .filter(t=>t.identificador===identificador)
     .reduce((s,t)=>s+(parseFloat(t.saida)||0),0);
@@ -788,6 +789,7 @@ function addPessoa(){
   const ident = document.getElementById('pessoaIdentInput').value.trim().toUpperCase();
   const nome = document.getElementById('pessoaNomeInput').value.trim();
   if(!ident || !nome){ alert('Preencha o identificador e o nome da pessoa.'); return; }
+  if(ident==='C'){ alert('O identificador "C" é reservado para a Calebe (você) e não entra no saldo devedor.'); return; }
   if(!state.people) state.people = [];
   if(state.people.some(p=>p.identificador===ident)){ alert('Já existe uma pessoa com esse identificador.'); return; }
   state.people.push({ id: uid(), identificador: ident, nome, divida: 0 });
