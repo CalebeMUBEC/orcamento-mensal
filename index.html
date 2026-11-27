@@ -130,6 +130,12 @@ body{
   padding:3px 10px;border-radius:999px;
 }
 table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:0.85rem;}
+.budget-table{table-layout:fixed;}
+.budget-table th:first-child,.budget-table td:first-child{width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.budget-table th:nth-child(2),.budget-table td:nth-child(2),
+.budget-table th:nth-child(3),.budget-table td:nth-child(3){width:22%;}
+.budget-table th:last-child,.budget-table td:last-child{width:26px;}
+.budget-table td:first-child .editable{overflow:hidden;text-overflow:ellipsis;}
 thead th{
   text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:.03em;
   color:var(--text-muted);padding:0 10px 4px;font-weight:700;
@@ -240,7 +246,7 @@ select option{ background:var(--bg1); color:var(--text); }
     <div class="grid grid-main">
       <div class="card span-5">
         <div class="section-title">Receitas <span class="pill" id="receitasTotalPill"></span></div>
-        <table>
+        <table class="budget-table">
           <thead><tr><th>Nome</th><th>Previsto</th><th>Entrou</th><th></th></tr></thead>
           <tbody id="receitasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="receitasPrevistoTotal"></td><td id="receitasEntrouTotal"></td><td></td></tr></tfoot>
@@ -256,7 +262,7 @@ select option{ background:var(--bg1); color:var(--text); }
       <div class="card span-4">
         <div class="section-title">Despesas Fixas</div>
         <div id="fixasTableWrap" style="overflow-y:auto;transition:max-height .25s ease;">
-        <table>
+        <table class="budget-table">
           <thead><tr><th>Nome</th><th>Orçamento</th><th>Saída</th><th></th></tr></thead>
           <tbody id="fixasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="fixasOrcTotal"></td><td id="fixasSaiTotal"></td><td></td></tr></tfoot>
@@ -268,7 +274,7 @@ select option{ background:var(--bg1); color:var(--text); }
 
       <div class="card span-4">
         <div class="section-title">Despesas Variáveis <span class="pill">auto (transações)</span></div>
-        <table>
+        <table class="budget-table">
           <thead><tr><th>Categoria</th><th>Orçamento</th><th>Saída</th><th></th></tr></thead>
           <tbody id="variaveisBody"></tbody>
           <tfoot><tr><td>Total</td><td id="variaveisOrcTotal"></td><td id="variaveisSaiTotal"></td><td></td></tr></tfoot>
@@ -283,7 +289,7 @@ select option{ background:var(--bg1); color:var(--text); }
 
       <div class="card span-6">
         <div class="section-title">Economias</div>
-        <table>
+        <table class="budget-table">
           <thead><tr><th>Nome</th><th>Planejado</th><th>Aporte</th><th></th></tr></thead>
           <tbody id="economiasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="economiasPlanTotal"></td><td id="economiasAporteTotal"></td><td></td></tr></tfoot>
@@ -293,7 +299,7 @@ select option{ background:var(--bg1); color:var(--text); }
 
       <div class="card span-6">
         <div class="section-title">Dívidas</div>
-        <table>
+        <table class="budget-table">
           <thead><tr><th>Nome</th><th>Orçamento</th><th>Saída</th><th></th></tr></thead>
           <tbody id="dividasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="dividasOrcTotal"></td><td id="dividasSaiTotal"></td><td></td></tr></tfoot>
