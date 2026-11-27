@@ -253,12 +253,15 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
 
       <div class="card span-4">
         <div class="section-title">Despesas Fixas</div>
+        <div id="fixasTableWrap">
         <table>
           <thead><tr><th>Nome</th><th>Orçamento</th><th>Saída</th><th></th></tr></thead>
           <tbody id="fixasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="fixasOrcTotal"></td><td id="fixasSaiTotal"></td><td></td></tr></tfoot>
         </table>
         <button class="add-row-btn" onclick="addRow('fixas')">+ Adicionar Despesa Fixa</button>
+        </div>
+        <button class="btn-ghost" id="fixasToggleBtn" style="width:100%;margin-top:8px;" onclick="toggleFixasVisibility()">🙈 Esconder</button>
       </div>
 
       <div class="card span-4">
@@ -413,7 +416,8 @@ function defaultState(){
     cards: ["Nubank","Inter","C6 Bank","Itaú"],
     people: [],
     months: {},
-    transactions: []
+    transactions: [],
+    ui: { fixasHidden: false }
   };
 }
 
@@ -450,11 +454,24 @@ function loadState(){
     if(raw){
       const parsed = JSON.parse(raw);
       if(!parsed.people) parsed.people = [];
+      if(!parsed.ui) parsed.ui = { fixasHidden: false };
       return parsed;
     }
   }catch(e){}
   return defaultState();
 }
+
+function seedFixedExpensesForMonths(monthKeys){
+  const defaultFixas = emptyMonth().fixas;
+  monthKeys.forEach(m=>{
+    const mo = getMonth(m);
+    if(!mo.fixas || mo.fixas.length===0){
+      mo.fixas = JSON.parse(JSON.stringify(defaultFixas));
+    }
+  });
+  saveState();
+}
+seedFixedExpensesForMonths(['2026-10','2026-11','2026-12']);
 function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
 function getMonth(m){
@@ -592,6 +609,25 @@ function buildVariaveis(){
   document.getElementById('variaveisSaiTotal').textContent = fmtBRL(saiTotal);
   return {orcTotal, saiTotal};
 }
+
+function toggleFixasVisibility(){
+  if(!state.ui) state.ui = { fixasHidden:false };
+  state.ui.fixasHidden = !state.ui.fixasHidden;
+  saveState();
+  applyFixasVisibility();
+}
+function applyFixasVisibility(){
+  if(!state.ui) state.ui = { fixasHidden:false };
+  const wrap = document.getElementById('fixasTableWrap');
+  const btn = document.getElementById('fixasToggleBtn');
+  if(state.ui.fixasHidden){
+    wrap.style.display = 'none';
+    btn.textContent = '👁 Mostrar';
+  } else {
+    wrap.style.display = '';
+    btn.textContent = '🙈 Esconder';
+  }
+}
 function updateVarOrc(cat, value){
   getMonth(currentMonth).variaveisOrcamento[cat] = parseFloat(value.replace(',','.'))||0;
   saveState();
@@ -652,6 +688,7 @@ function renderDashboard(){
   buildRows('economias');
   buildRows('dividas');
   const varTotals = buildVariaveis();
+  applyFixasVisibility();
 
   const receitasPrevisto = mo.receitas.reduce((s,r)=>s+(+r.previsto||0),0);
   const receitasEntrou = mo.receitas.reduce((s,r)=>s+(+r.entrou||0),0);
