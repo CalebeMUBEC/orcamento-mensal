@@ -339,6 +339,7 @@ select option{ background:var(--bg1); color:var(--text); }
             <th data-sort="parcela">Nº Parcela ⇅</th>
             <th data-sort="identificador">Identificador ⇅</th>
             <th data-sort="categoria">Categoria ⇅</th>
+            <th data-sort="cartao">Cartão ⇅</th>
             <th></th>
           </tr>
         </thead>
@@ -1081,6 +1082,7 @@ function renderTransactions(){
       <td><input class="editable" type="text" value="${(t.parcela||'').replace(/"/g,'&quot;')}" placeholder="ex: 2/12" onchange="updateTransaction('${t.id}','parcela',this.value)"></td>
       <td>${identSelectHTML(t.identificador, `updateTransaction('${t.id}','identificador',this.value)`)}</td>
       <td>${(!t.identificador||t.identificador==='C') ? selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`) : '<span style="opacity:.5;">—</span>'}</td>
+      <td>${selectHTML(state.cards, t.cartao, `updateTransaction('${t.id}','cartao',this.value)`)}</td>
       <td class="row-actions"><button onclick="removeTransaction('${t.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
