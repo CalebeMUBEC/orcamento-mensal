@@ -295,6 +295,12 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
         </table>
         <button class="add-row-btn" onclick="addRow('dividas')">+ Adicionar</button>
       </div>
+
+      <div class="card span-12">
+        <div class="section-title">Saldo Devedor (Pessoas que usam meu cartão) <span class="pill" id="pessoasTotalPill"></span></div>
+        <div class="grid" id="pessoasGrid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
+        <button class="add-row-btn" onclick="openAddPessoaModal()">+ Adicionar Pessoa</button>
+      </div>
     </div>
   </div>
 
@@ -306,6 +312,7 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
         <input type="text" id="txSearch" class="grow" placeholder="Buscar descrição...">
         <select id="txFilterCategoria"><option value="">Todas categorias</option></select>
         <select id="txFilterCartao"><option value="">Todos cartões</option></select>
+        <select id="txFilterPessoa"><option value="">Todas pessoas</option></select>
         <button class="btn-ghost" onclick="openManageModal('categoria')">⚙ Categorias</button>
         <button class="btn-ghost" onclick="openManageModal('cartao')">⚙ Cartões</button>
         <button class="btn-ghost" onclick="openPasteModal()">📋 Colar do Excel</button>
@@ -320,6 +327,7 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
             <th data-sort="descricao">Descrição ⇅</th>
             <th data-sort="categoria">Categoria ⇅</th>
             <th data-sort="cartao">Cartão ⇅</th>
+            <th data-sort="identificador">Identificador ⇅</th>
             <th></th>
           </tr>
         </thead>
@@ -355,6 +363,7 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
       <select id="pasteColOrder" style="flex:1;min-width:220px;border:none;background:rgba(127,127,170,0.12);padding:9px 12px;border-radius:10px;color:var(--text);font-family:inherit;">
         <option value="data,saida,descricao,categoria,cartao">Data, Saída, Descrição, Categoria, Cartão</option>
+        <option value="data,saida,descricao,categoria,cartao,identificador">Data, Saída, Descrição, Categoria, Cartão, Identificador</option>
         <option value="data,saida,descricao,categoria">Data, Saída, Descrição, Categoria</option>
         <option value="data,descricao,saida,categoria,cartao">Data, Descrição, Saída, Categoria, Cartão</option>
         <option value="data,saida,descricao">Data, Saída, Descrição</option>
@@ -369,6 +378,28 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
   </div>
 </div>
 
+<div class="modal-overlay" id="pessoaModal">
+  <div class="modal">
+    <span class="modal-close" onclick="closePessoaModal()">✕</span>
+    <h3>Adicionar Pessoa</h3>
+    <input type="text" id="pessoaIdentInput" placeholder="Identificador (ex: J)" maxlength="3">
+    <input type="text" id="pessoaNomeInput" placeholder="Nome da pessoa">
+    <button class="btn-primary" style="width:100%;" onclick="addPessoa()">Adicionar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dividaModal">
+  <div class="modal">
+    <span class="modal-close" onclick="closeDividaModal()">✕</span>
+    <h3 id="dividaModalTitle">Ajustar Dívida</h3>
+    <input type="text" id="dividaValorInput" placeholder="Valor (ex: 50,00)">
+    <div style="display:flex;gap:10px;">
+      <button class="btn-primary" style="flex:1;background:linear-gradient(135deg,#3ecf8e,#5ad1c4);" onclick="adjustDivida(1)">+ Adicionar</button>
+      <button class="btn-primary" style="flex:1;background:linear-gradient(135deg,#ff6b81,#ff8fab);" onclick="adjustDivida(-1)">− Remover</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'orcamentoAppData_v1';
 
@@ -380,6 +411,7 @@ function defaultState(){
   return {
     categories: ["Supermercado","Restaurante","Games","Compras","Uber","Viagem","Saude","Coisas Casa","Assinatura","Mercadinho","Role","Cabelo","Combustivel","Presente","Celular"],
     cards: ["Nubank","Inter","C6 Bank","Itaú"],
+    people: [],
     months: {},
     transactions: []
   };
@@ -402,7 +434,11 @@ let txSort = {key:'data', dir:'desc'};
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(!parsed.people) parsed.people = [];
+      return parsed;
+    }
   }catch(e){}
   return defaultState();
 }
@@ -646,6 +682,7 @@ function renderDashboard(){
 
   renderCharts(totals);
   refreshFilterOptions();
+  renderPessoas();
   saveState();
 }
 
@@ -653,10 +690,12 @@ function renderDashboard(){
 function refreshFilterOptions(){
   const selCat = document.getElementById('txFilterCategoria');
   const selCard = document.getElementById('txFilterCartao');
-  const curCat = selCat.value, curCard = selCard.value;
+  const selPessoa = document.getElementById('txFilterPessoa');
+  const curCat = selCat.value, curCard = selCard.value, curPessoa = selPessoa.value;
   selCat.innerHTML = '<option value="">Todas categorias</option>' + state.categories.map(c=>`<option value="${c}">${c}</option>`).join('');
   selCard.innerHTML = '<option value="">Todos cartões</option>' + state.cards.map(c=>`<option value="${c}">${c}</option>`).join('');
-  selCat.value = curCat; selCard.value = curCard;
+  selPessoa.innerHTML = '<option value="">Todas pessoas</option>' + (state.people||[]).map(p=>`<option value="${p.identificador}">${p.identificador} - ${p.nome}</option>`).join('');
+  selCat.value = curCat; selCard.value = curCard; selPessoa.value = curPessoa;
 }
 
 function addTransaction(){
@@ -666,10 +705,120 @@ function addTransaction(){
     saida: 0,
     descricao: '',
     categoria: state.categories[0]||'',
-    cartao: state.cards[0]||''
+    cartao: state.cards[0]||'',
+    identificador: ''
   });
   saveState();
   renderTransactions();
+}
+
+/* ---------- PESSOAS / SALDO DEVEDOR ---------- */
+let dividaModalPersonId = null;
+
+function cartaoTotalForPessoa(identificador){
+  return state.transactions
+    .filter(t=>t.identificador===identificador)
+    .reduce((s,t)=>s+(parseFloat(t.saida)||0),0);
+}
+
+function openAddPessoaModal(){
+  document.getElementById('pessoaIdentInput').value = '';
+  document.getElementById('pessoaNomeInput').value = '';
+  document.getElementById('pessoaModal').classList.add('active');
+}
+function closePessoaModal(){ document.getElementById('pessoaModal').classList.remove('active'); }
+document.getElementById('pessoaModal').addEventListener('click', (e)=>{
+  if(e.target.id==='pessoaModal') closePessoaModal();
+});
+
+function addPessoa(){
+  const ident = document.getElementById('pessoaIdentInput').value.trim().toUpperCase();
+  const nome = document.getElementById('pessoaNomeInput').value.trim();
+  if(!ident || !nome){ alert('Preencha o identificador e o nome da pessoa.'); return; }
+  if(!state.people) state.people = [];
+  if(state.people.some(p=>p.identificador===ident)){ alert('Já existe uma pessoa com esse identificador.'); return; }
+  state.people.push({ id: uid(), identificador: ident, nome, divida: 0 });
+  saveState();
+  closePessoaModal();
+  renderPessoas();
+  renderTransactions();
+}
+
+function removePessoa(id){
+  if(!confirm('Remover esta pessoa? As transações já lançadas mantêm o identificador, mas ele deixa de aparecer nas listas.')) return;
+  state.people = state.people.filter(p=>p.id!==id);
+  saveState();
+  renderPessoas();
+  renderTransactions();
+}
+
+function updatePessoaField(id, field, value){
+  const p = state.people.find(p=>p.id===id);
+  if(!p) return;
+  p[field] = field==='identificador' ? value.trim().toUpperCase() : value.trim();
+  saveState();
+  renderPessoas();
+  renderTransactions();
+}
+
+function openAdjustDivida(id){
+  dividaModalPersonId = id;
+  const p = state.people.find(p=>p.id===id);
+  if(!p) return;
+  document.getElementById('dividaModalTitle').textContent = 'Ajustar Dívida de ' + p.nome;
+  document.getElementById('dividaValorInput').value = '';
+  document.getElementById('dividaModal').classList.add('active');
+}
+function closeDividaModal(){ document.getElementById('dividaModal').classList.remove('active'); dividaModalPersonId = null; }
+document.getElementById('dividaModal').addEventListener('click', (e)=>{
+  if(e.target.id==='dividaModal') closeDividaModal();
+});
+
+function adjustDivida(sign){
+  const p = state.people.find(p=>p.id===dividaModalPersonId);
+  if(!p) return;
+  const val = parseBRNumber(document.getElementById('dividaValorInput').value);
+  if(!val){ closeDividaModal(); return; }
+  p.divida = (p.divida||0) + sign*val;
+  saveState();
+  closeDividaModal();
+  renderPessoas();
+}
+
+function renderPessoas(){
+  if(!state.people) state.people = [];
+  const grid = document.getElementById('pessoasGrid');
+  let totalGeral = 0;
+  grid.innerHTML = state.people.map(p=>{
+    const cartao = cartaoTotalForPessoa(p.identificador);
+    const divida = p.divida || 0;
+    const total = cartao + divida;
+    totalGeral += total;
+    return `
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;flex:1;min-width:0;">
+          <input class="editable" style="width:44px;text-align:center;font-weight:800;background:rgba(124,111,240,0.15);border-radius:8px;flex-shrink:0;" value="${p.identificador}" maxlength="3" onchange="updatePessoaField('${p.id}','identificador',this.value)">
+          <input class="editable" style="flex:1;font-weight:700;min-width:0;" value="${p.nome}" onchange="updatePessoaField('${p.id}','nome',this.value)">
+        </div>
+        <button onclick="removePessoa('${p.id}')" style="border:none;background:transparent;cursor:pointer;color:var(--text-muted);font-size:0.95rem;flex-shrink:0;">✕</button>
+      </div>
+      <div style="margin-top:12px;font-size:0.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);">Cartão</div>
+      <div style="font-weight:700;font-size:1.05rem;">${fmtBRL(cartao)}</div>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div>
+          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);">Dívida</div>
+          <div style="font-weight:700;font-size:1.05rem;">${fmtBRL(divida)}</div>
+        </div>
+        <button class="btn-ghost" style="padding:6px 12px;font-size:0.75rem;white-space:nowrap;" onclick="openAdjustDivida('${p.id}')">± Ajustar</button>
+      </div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(127,127,170,0.2);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;font-size:0.85rem;">Saldo Devedor</span>
+        <span style="font-weight:800;color:var(--bad);font-size:1.05rem;">${fmtBRL(total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('pessoasTotalPill').textContent = fmtBRL(totalGeral);
 }
 
 /* ---------- PASTE FROM EXCEL ---------- */
@@ -745,11 +894,12 @@ function parsePastedRows(text){
   lines.forEach(line=>{
     const cells = line.split('\t');
     if(cells.length===1 && cells[0].includes(';')) cells.splice(0,1,...cells[0].split(';'));
-    const entry = {data:'', saida:0, descricao:'', categoria:'', cartao:''};
+    const entry = {data:'', saida:0, descricao:'', categoria:'', cartao:'', identificador:''};
     order.forEach((field, idx)=>{
       const val = cells[idx]!==undefined ? cells[idx].trim() : '';
       if(field==='saida') entry.saida = parseBRNumber(val);
       else if(field==='data') entry.data = parseDateCell(val);
+      else if(field==='identificador') entry.identificador = val.toUpperCase();
       else entry[field] = val;
     });
     if(entry.data || entry.descricao || entry.saida) rows.push(entry);
@@ -769,13 +919,18 @@ function importPastedData(){
       getMonth(currentMonth).variaveisOrcamento[categoria] = 0;
     }
     if(cartao && !state.cards.includes(cartao)) state.cards.push(cartao);
+    const identificador = (r.identificador||'').toUpperCase();
+    if(identificador && !state.people.some(p=>p.identificador===identificador)){
+      state.people.push({ id: uid(), identificador, nome: identificador, divida: 0 });
+    }
     state.transactions.push({
       id: uid(),
       data: r.data || new Date().toISOString().slice(0,10).split('-').reverse().join('/'),
       saida: r.saida || 0,
       descricao: r.descricao || '',
       categoria: categoria,
-      cartao: cartao
+      cartao: cartao,
+      identificador: identificador
     });
   });
   saveState();
@@ -793,9 +948,12 @@ function removeTransaction(id){
 function updateTransaction(id, field, value){
   const t = state.transactions.find(t=>t.id===id);
   if(!t) return;
-  t[field] = field==='saida' ? (parseFloat(value.replace(',','.'))||0) : value;
+  if(field==='saida') t[field] = parseFloat(value.replace(',','.'))||0;
+  else if(field==='identificador') t[field] = value.trim().toUpperCase();
+  else t[field] = value;
   saveState();
   renderTransactions();
+  renderPessoas();
 }
 
 document.getElementById('txSearch').addEventListener('input', renderTransactions);
@@ -821,11 +979,13 @@ function renderTransactions(){
   const search = document.getElementById('txSearch').value.toLowerCase();
   const fCat = document.getElementById('txFilterCategoria').value;
   const fCard = document.getElementById('txFilterCartao').value;
+  const fPessoa = document.getElementById('txFilterPessoa').value;
 
   let rows = state.transactions.filter(t=>{
     if(search && !(t.descricao||'').toLowerCase().includes(search)) return false;
     if(fCat && t.categoria!==fCat) return false;
     if(fCard && t.cartao!==fCard) return false;
+    if(fPessoa && t.identificador!==fPessoa) return false;
     return true;
   });
 
@@ -851,6 +1011,7 @@ function renderTransactions(){
       <td><input class="editable" type="text" value="${(t.descricao||'').replace(/"/g,'&quot;')}" onchange="updateTransaction('${t.id}','descricao',this.value)"></td>
       <td>${selectHTML(state.categories, t.categoria, `updateTransaction('${t.id}','categoria',this.value)`)}</td>
       <td>${selectHTML(state.cards, t.cartao, `updateTransaction('${t.id}','cartao',this.value)`, true)}</td>
+      <td>${identSelectHTML(t.identificador, `updateTransaction('${t.id}','identificador',this.value)`)}</td>
       <td class="row-actions"><button onclick="removeTransaction('${t.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -864,6 +1025,13 @@ function renderTransactions(){
 function selectHTML(options, selected, onchange, asTag){
   const opts = options.map(o=>`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('');
   return `<select class="editable" onchange="${onchange}">${opts}</select>`;
+}
+
+function identSelectHTML(selected, onchange){
+  const opts = ['<option value="">—</option>'].concat(
+    (state.people||[]).map(p=>`<option value="${p.identificador}" ${p.identificador===selected?'selected':''}>${p.identificador} - ${p.nome}</option>`)
+  );
+  return `<select class="editable" onchange="${onchange}">${opts.join('')}</select>`;
 }
 
 /* ---------- MANAGE MODAL (categorias / cartões) ---------- */
