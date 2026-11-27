@@ -253,15 +253,15 @@ tfoot td{font-weight:800;padding:10px;border-top:2px solid rgba(127,127,170,0.2)
 
       <div class="card span-4">
         <div class="section-title">Despesas Fixas</div>
-        <div id="fixasTableWrap">
+        <div id="fixasTableWrap" style="overflow-y:auto;transition:max-height .25s ease;">
         <table>
           <thead><tr><th>Nome</th><th>Orçamento</th><th>Saída</th><th></th></tr></thead>
           <tbody id="fixasBody"></tbody>
           <tfoot><tr><td>Total</td><td id="fixasOrcTotal"></td><td id="fixasSaiTotal"></td><td></td></tr></tfoot>
         </table>
-        <button class="add-row-btn" onclick="addRow('fixas')">+ Adicionar Despesa Fixa</button>
         </div>
-        <button class="btn-ghost" id="fixasToggleBtn" style="width:100%;margin-top:8px;" onclick="toggleFixasVisibility()">🙈 Esconder</button>
+        <button class="add-row-btn" onclick="addRow('fixas')">+ Adicionar Despesa Fixa</button>
+        <button class="btn-ghost" id="fixasToggleBtn" style="width:100%;margin-top:8px;" onclick="toggleFixasVisibility()">▾ Expandir</button>
       </div>
 
       <div class="card span-4">
@@ -417,7 +417,7 @@ function defaultState(){
     people: [],
     months: {},
     transactions: [],
-    ui: { fixasHidden: false }
+    ui: { fixasCollapsed: true }
   };
 }
 
@@ -454,7 +454,8 @@ function loadState(){
     if(raw){
       const parsed = JSON.parse(raw);
       if(!parsed.people) parsed.people = [];
-      if(!parsed.ui) parsed.ui = { fixasHidden: false };
+      if(!parsed.ui) parsed.ui = { fixasCollapsed: true };
+      if(parsed.ui.fixasCollapsed===undefined) parsed.ui.fixasCollapsed = true;
       return parsed;
     }
   }catch(e){}
@@ -611,21 +612,21 @@ function buildVariaveis(){
 }
 
 function toggleFixasVisibility(){
-  if(!state.ui) state.ui = { fixasHidden:false };
-  state.ui.fixasHidden = !state.ui.fixasHidden;
+  if(!state.ui) state.ui = { fixasCollapsed:true };
+  state.ui.fixasCollapsed = !state.ui.fixasCollapsed;
   saveState();
   applyFixasVisibility();
 }
 function applyFixasVisibility(){
-  if(!state.ui) state.ui = { fixasHidden:false };
+  if(!state.ui) state.ui = { fixasCollapsed:true };
   const wrap = document.getElementById('fixasTableWrap');
   const btn = document.getElementById('fixasToggleBtn');
-  if(state.ui.fixasHidden){
-    wrap.style.display = 'none';
-    btn.textContent = '👁 Mostrar';
+  if(state.ui.fixasCollapsed){
+    wrap.style.maxHeight = '220px';
+    btn.textContent = '▾ Expandir';
   } else {
-    wrap.style.display = '';
-    btn.textContent = '🙈 Esconder';
+    wrap.style.maxHeight = 'none';
+    btn.textContent = '▴ Recolher';
   }
 }
 function updateVarOrc(cat, value){
